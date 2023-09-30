@@ -1,6 +1,6 @@
 FROM scratch
 
-COPY app /app
+COPY artifacts /app
 
 ENV PORT=9090
 EXPOSE 9090
