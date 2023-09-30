@@ -1,0 +1,23 @@
+name: build with podman
+
+on:
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: login
+      run: podman login --username ${{ github.actor }} --password ${{ secrets.GITHUB_TOKEN }} ${{ env.REGISTRY }}
+
+    - name: build
+      run: podman build --format docker -o artifacts
+
+    - name: push
+      run: podman push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
