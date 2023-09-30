@@ -1,4 +1,4 @@
-name: build with podman
+name: Build package and container
 
 on:
   workflow_dispatch:
@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: mgoltzsche/podman
-      options: '--privileged'
+      options: "--privileged"
     steps:
     - uses: actions/checkout@v4
 
@@ -25,7 +25,7 @@ jobs:
     - run: podman push ${{ env.IMAGE_NAME }} ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
     - name: Package
-      run: tar -cf "${GITHUB_REPOSITORY#*/}.tgz" "${{ env.ARTIFACTS_PATH }}/app"
+      run: tar -cf "${GITHUB_REPOSITORY#*/}.tgz" -C "${{ env.ARTIFACTS_PATH }}/app" .
 
     - name: Upload Release
       uses: softprops/action-gh-release@v1
@@ -33,9 +33,3 @@ jobs:
         tag_name: ${{ github.ref_name }}
         files: "*.tgz"
         generate_release_notes: true
-
-    #- name: Upload artifact
-    #  uses: actions/upload-artifact@v3
-    #  with:
-    #    path: ${{ env.ARTIFACTS_PATH }}/app
-    #    retention-days: 1
