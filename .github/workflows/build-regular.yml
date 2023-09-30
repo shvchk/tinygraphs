@@ -1,4 +1,4 @@
-name: build
+name: build simplified
 
 on:
   workflow_dispatch:
@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
 
-    - name: Login to GitHub Container Registry
+    - name: Login to container registry
       uses: docker/login-action@v3
       with:
         registry: ${{ env.REGISTRY }}
@@ -28,6 +28,13 @@ jobs:
     - name: Build and push
       uses: docker/build-push-action@v5
       with:
+        outputs: artifacts
         push: ${{ github.event_name != 'pull_request' }}
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
+
+    - name: Check
+      run: |
+        ls -l
+        ls -l artifacts
+        ls -l artifacts/app
