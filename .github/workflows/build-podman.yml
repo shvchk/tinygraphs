@@ -10,31 +10,11 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
+    container:
+      image: mgoltzsche/podman
+      options: '--privileged'
     steps:
     - uses: actions/checkout@v4
-
-    - name: update podman
-      run: |
-        echo 'deb http://archive.ubuntu.com/ubuntu/ lunar main universe' > /etc/apt/sources.list.d/lunar.list
-
-        cat > /etc/apt/preferences.d/podman.pref << EOF
-        Package: podman buildah golang-github-containers-common libsubid4 netavark
-        Pin: release n=lunar
-        Pin-Priority: 990
-
-        Package: *
-        Pin: release n=lunar
-        Pin-Priority: -10
-        EOF
-
-        apt update
-        apt install buildah podman -y
-
-    - name: login
-      run: podman login --username ${{ github.actor }} --password ${{ secrets.GITHUB_TOKEN }} ${{ env.REGISTRY }}
-
-    - name: build
-      run: podman build --format docker -o artifacts
-
-    - name: push
-      run: podman push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+    - run: podman login --username ${{ github.actor }} --password ${{ secrets.GITHUB_TOKEN }} ${{ env.REGISTRY }}
+    - run: podman build --format docker -o artifacts
+    - run: podman push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
