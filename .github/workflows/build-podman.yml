@@ -6,14 +6,27 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
+  ARTIFACTS_PATH: artifacts
 
 jobs:
   build:
     runs-on: ubuntu-latest
     container:
       image: mgoltzsche/podman
+      options: '--privileged'
     steps:
     - uses: actions/checkout@v4
+
     - run: podman login -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }} ${{ env.REGISTRY }}
-    - run: podman build --format docker -o artifacts -t ${{ env.IMAGE_NAME }} .
+    - run: podman build --format docker -o ${{ env.ARTIFACTS_PATH }} -t ${{ env.IMAGE_NAME }} .
     - run: podman push ${{ env.IMAGE_NAME }} ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+
+    #- name: Package
+    #  run: tar -cf ${GITHUB_REPOSITORY#*/}.tgz ${{ env.ARTIFACTS_PATH }}/app
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: ${GITHUB_REPOSITORY#*/}
+        path: ${{ env.ARTIFACTS_PATH }}/app
+        retention-days: 1
