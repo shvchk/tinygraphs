@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="">
+  <head>
+    <meta charset="utf-8">
+    <title>Random avatar generator</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      html, body {
+        font: 1rem/1.5 system-ui, sans-serif;
+        color: #333;
+        margin: 0;
+        padding: 0;
+      }
+
+      input,
+      select {
+        font: inherit;
+        line-height: inherit;
+        background: none;
+        border: 1px solid #d0d0d0;
+        border-radius: .2rem;
+      }
+
+      input[type="color"] {
+        border: 0;
+        background: none;
+        vertical-align: middle;
+        padding: 0;
+        width: 2rem;
+        height: 2rem;
+        -webkit-appearance: none;
+      }
+
+      input[type="color"]::-webkit-color-swatch {
+        border: 1px solid #d0d0d0;
+      }
+
+      input[type="color"]::-moz-color-swatch {
+        border: 1px solid #d0d0d0;
+      }
+
+      button {
+        background: none;
+        border: 1px solid #d0d0d0;
+        border-radius: .2rem;
+        font: inherit;
+      }
+
+      button a {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      #content {
+        max-width: 960px;
+        width: 100%;
+        margin: 0 auto;
+        padding: 1rem;
+      }
+
+      #avatar-generator {
+        display: flex;
+      }
+
+      #avatar > img {
+        width: 256px;
+      }
+
+      .toolbar {
+        margin-left: 1rem;
+      }
+
+      .toolbar form[name='settings'] {
+        margin-bottom: .5rem;
+      }
+
+      .toolbar fieldset[name='colors'] {
+        margin: 0 0 .5rem 0;
+        padding: 0;
+        border: 0;
+      }
+
+      .toolbar input[name='lines'],
+      .toolbar input[name='size'] {
+        /*max-width: 8rem;
+        flex: 1 8rem;*/
+      }
+
+      .toolbar .form-row {
+        display: flex;
+        margin-bottom: .5rem;
+      }
+
+      .toolbar .form-row input,
+      .toolbar .form-row select {
+        display: block;
+        width: 100%;
+      }
+
+      .toolbar .form-row input:not(:first-child),
+      .toolbar .form-row select:not(:first-child) {
+        margin-left: .5rem;
+      }
+
+      .toolbar .button-wrapper {
+        display: flex;
+      }
+
+      .toolbar .button-wrapper button {
+        display: block;
+        flex: 1;
+        line-height: 2;
+        color: #fff;
+        background: #60a0ff;
+        border: 0;
+      }
+
+      .toolbar .button-wrapper button:not(:first-child) {
+        margin-left: .2rem;
+      }
+
+      #add-color {
+        font-size: 2rem;
+        line-height: 1;
+        opacity: .3;
+        width: 2rem;
+        text-align: center;
+        cursor: default;
+      }
+
+      #add-color:hover {
+        color: #00d000;
+        opacity: 1;
+      }
+
+      .select-shape {
+        padding: .1rem;
+      }
+
+      .randomize-input,
+      .remove-input {
+        line-height: 1;
+        margin-left: .5rem;
+        vertical-align: middle;
+        cursor: default;
+      }
+
+      .randomize-input {
+        filter: grayscale(1);
+      }
+
+      .remove-input {
+        font-size: 2rem;
+        opacity: .2;
+      }
+
+      .remove-input:hover {
+        color: red;
+        opacity: 1;
+      }
+
+      .rotating {
+        animation: rotation 2s linear infinite;
+      }
+
+      @keyframes rotation {
+        from {
+          transform: rotate(0deg);
+        }
+        to {
+          transform: rotate(359deg);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    
+    <div id="content">
+      <h1>Random avatar generator</h1>
+
+      <div id='avatar-generator'>
+        <div id='avatar'>
+          <img crossorigin='anonymous'>
+        </div>
+
+        <div class='toolbar'>
+          <form name='settings'>
+            <div id='add-color'>+</div>
+            <fieldset name='colors'></fieldset>
+            <div class='form-row'>
+              <select name='shape' class='select-shape'>
+                <option value='squares'>Squares</option>
+                <option value='spaceinvaders'>Space invaders</option>
+                <option value='isogrids'>Isogrids</option>
+                <option value='hexa' selected>Hexa isogrids</option>
+                <option value='hexa16'>Hexa + rotation</option>
+              </select>
+            </div>
+            <div class='form-row'>
+              <label>Lines</label><input type='number' min='4' step='1' placeholder='Default' size='4' name='lines'>
+            </div>
+            <div class='form-row'>
+              <label>Size</label><input type='number' min='8' max='999' step='1' name='size' title='8 – 999' size='4' value='512'>
+            </div>
+          </form>
+          <div class='button-wrapper'>
+            <button id='new-avatar'><div>🎲</div></button>
+            <button id='download-avatar'><a rel='noopener'>⭳ PNG</a></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  <script>
+    let avatarGeneratorURL = new URL(window.location.origin);
+
+    let currentSeed = '';
+    let colors = ['#000000', getRandomColor(), '#ffffff'];
+
+    let avatar = document.querySelector('#avatar > img');
+    let addColorBtn = document.getElementById('add-color');
+    let newBtn = document.getElementById('new-avatar');
+    let downloadBtn = document.getElementById('download-avatar');
+
+    let settingsForm = document.forms.settings;
+    let colorsForm = settingsForm.colors;
+
+    let settingsObserver = new MutationObserver(applySettings);
+
+    for (let color of colors) {
+      addColorInput(colorsForm, color);
+    }
+
+    avatar.onclick = newBtn.onclick = () => getAvatar();
+    avatar.onload = () => {
+      newBtn.disabled = false;
+      newBtn.firstChild.classList.remove('rotating');
+    };
+
+    addColorBtn.onclick = () => addColorInput(colorsForm);
+    settingsForm.onchange = applySettings;
+
+    downloadBtn.onclick = () => {
+      let link = downloadBtn.getElementsByTagName('a')[0];
+      link.href = img2png(avatar);
+      link.download = `avatar-${currentSeed}-${colors.join('-')}.png`;
+    };
+
+    settingsObserver.observe(colorsForm, { childList: true });
+    getAvatar();
+
+    function getAvatarURL(baseURL, seed, shape, lines, size = 512, colors) {
+      let shapes = {
+        'squares': 'squares',
+        'spaceinvaders': 'spaceinvaders',
+        'isogrids': 'isogrids',
+        'hexa': 'labs/isogrids/hexa',
+        'hexa16': 'labs/isogrids/hexa16'
+      };
+
+      let url = new URL(seed, `${baseURL}${shapes[shape]}/`);
+
+      url.search = new URLSearchParams({
+        'fmt': 'svg',
+        'size': size,
+        'numcolors': colors.length
+      });
+
+      if (lines) {
+        url.searchParams.append('lines', lines);
+      }
+
+      for (let color of colors) {
+        url.searchParams.append('colors', color);
+      }
+
+      return url;
+    }
+
+    function addColorInput(form, color) {
+      let wrapper = document.createElement('div');
+
+      let colorInput = document.createElement('input');
+      colorInput.name = 'color';
+      colorInput.type = 'color';
+
+      if (color) {
+        colorInput.value = color;
+      }
+
+      let colorInputRandomize = document.createElement('span');
+      colorInputRandomize.innerHTML = '🎲';
+      colorInputRandomize.classList.add('randomize-input');
+      colorInputRandomize.onclick = randomizeColorInput;
+
+      let colorInputRemove = document.createElement('span');
+      colorInputRemove.innerHTML = '×';
+      colorInputRemove.classList.add('remove-input');
+      colorInputRemove.onclick = () => wrapper.remove();
+
+      wrapper.append(colorInput, colorInputRandomize, colorInputRemove);
+      form.append(wrapper);
+    }
+
+    function randomizeColorInput(ev) {
+      let input = ev.target.parentElement.querySelector('input');
+      input.value = getRandomColor();
+      applySettings();
+    }
+
+    function applySettings() {
+      colors = [];
+      let colorNodes = colorsForm.elements;
+
+      if (!colorNodes) return;
+
+      if (colorNodes.length) { // multiple colors
+        for (let color of colorNodes) {
+          colors.push(color.value.slice(1));
+        }
+      } else {
+        colors.push(colorNodes.value.slice(1));
+      }
+
+      getAvatar(currentSeed);
+    }
+
+    function getAvatar(seed) {
+      currentSeed = seed || getRandomString();
+
+      newBtn.disabled = true;
+      newBtn.firstChild.classList.add('rotating');
+
+      if (settingsForm.shape.value === 'isogrids') {
+        settingsForm.lines.parentElement.style.display = '';
+      } else {
+        settingsForm.lines.value = '';
+        settingsForm.lines.parentElement.style.display = 'none';
+      }
+
+      if (+settingsForm.size.value > 999) {
+        settingsForm.size.value = 999;
+      }
+
+      let avatarURL = getAvatarURL(
+        avatarGeneratorURL,
+        currentSeed,
+        settingsForm.shape.value,
+        settingsForm.lines.value,
+        settingsForm.size.value,
+        colors
+      );
+
+      avatar.src = avatarURL;
+      return avatarURL;
+    }
+
+    function getRandomString(length = 32, chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz') {
+      return [...crypto.getRandomValues(new Uint32Array(length))]
+        .map(x => chars[x % chars.length])
+        .join('');
+    }
+
+    function getRandomColor() {
+      return '#' + getRandomString(6, '0123456789abcdef');
+    }
+
+    function img2png(elem) {
+      let c = document.createElement('canvas');
+      let ctx = c.getContext('2d');
+
+      c.width = elem.naturalWidth;
+      c.height = elem.naturalHeight;
+      ctx.drawImage(elem, 0, 0);
+      return c.toDataURL();
+    }
+
+  </script>
+  </body>
+</html>
