@@ -30,7 +30,7 @@ jobs:
     - name: Upload Release
       uses: softprops/action-gh-release@v1
       with:
-        #tag_name: ${{ github.ref_name }}
+        tag_name: ${{ github.ref_name }}
         files: "*.tgz"
         generate_release_notes: true
 
