@@ -15,6 +15,7 @@ jobs:
       options: '--privileged'
     steps:
     - uses: actions/checkout@v4
-    - run: podman login --username ${{ github.actor }} --password ${{ secrets.GITHUB_TOKEN }} ${{ env.REGISTRY }}
-    - run: podman build --format docker -o artifacts
-    - run: podman push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+    - run: ls -l
+    #- run: podman login --username ${{ github.actor }} --password ${{ secrets.GITHUB_TOKEN }} ${{ env.REGISTRY }}
+    #- run: podman build --format docker -o artifacts
+    #- run: podman push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
